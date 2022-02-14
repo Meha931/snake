@@ -46,13 +46,28 @@ let Game = {
     tickerId: 0,
     tick: 0,
     fps: 60,
-    ticksToMove: 20,
+    ticksToMove: 30,
     //difficulty: 0.9, // ratio; how many notBlocks should the snake span to win
     //hasWon: false,
 };
 
 let canvas = getElem("canvas");
 let ctx = canvas.getContext("2d");
+
+let checkInList = {
+    apples: ([x, y]):boolean => {
+        for (let i=0; i<Game.apples.length; i++) {
+            if (x === Game.apples[i][0] && y === Game.apples[i][1]) return true;
+        }
+        return false;
+    },
+    segments: ([x, y]):boolean => {
+        for (let i=0; i<Game.snake.segments.length; i++) {
+            if (x === Game.snake.segments[i][0] && y === Game.snake.segments[i][1]) return true;
+        }
+        return false;
+    },
+};
 
 function randomSpace():[number,number] {
     let freeTiles = Game.sizeX * Game.sizeY;
@@ -63,7 +78,7 @@ function randomSpace():[number,number] {
     let currentCount = 0;
     for (let x=0; x<Game.sizeX; x++) {
         for (let y=0; y<Game.sizeY; y++) {
-            if (Game.field[x][y] === " ") {
+            if (Game.field[x][y] === " " && !(checkInList.apples([x, y])) && !(checkInList.segments([x, y]))) {
                 if (randomFreeTileNumber === currentCount) return [x, y];
                 currentCount++;
             }
@@ -74,7 +89,7 @@ function randomSpace():[number,number] {
 }
 
 let draw = {
-    block: (x, y) => {
+    block: ([x, y]) => {
         let c = {
             x: x * Game.scale,
             y: y * Game.scale,
@@ -87,7 +102,7 @@ let draw = {
         ctx.strokeWidth = Game.scale / 10;
         ctx.strokeRect(c.x, c.y, c.w, c.h);
     },
-    apple: (x, y) => {
+    apple: ([x, y]) => {
         let c = {
             x: (x+0.5) * Game.scale,
             y: (y+0.5) * Game.scale,
@@ -101,7 +116,7 @@ let draw = {
         ctx.strokeWidth = Game.scale / 10;
         ctx.stroke();
     },
-    snakeSegment: (x, y) => {
+    snakeSegment: ([x, y]) => {
         let c = {
             x: (x+0.5) * Game.scale,
             y: (y+0.5) * Game.scale,
@@ -239,26 +254,18 @@ function render():void {
     ctx.fillStyle = "#CCCCCC";
     ctx.fillRect(0, 0, w, h);
     Game.apples.forEach(
-        (apple) => draw.apple(apple[0], apple[1])
+        (apple) => draw.apple(apple)
     );
     Game.snake.segments.forEach(
-        (segment) => draw.snakeSegment(segment[0], segment[1])
+        (segment) => draw.snakeSegment(segment)
     );
     draw.smile(Game.snake.segments[Game.snake.segments.length - 1]);
     for (let x=0; x<Game.sizeX; x++) {
         for (let y=0; y<Game.sizeY; y++) {
-            if (Game.field[x][y] === "@") draw.block(x, y);
+            if (Game.field[x][y] === "@") draw.block([x, y]);
         }
     }
 }
-
-// function controls(e):void {
-//     if (snake.previousDirection !== "down" && (e.code === "ArrowUp" || e.code === "KeyW")) snake.direction = "up";
-//     else if (snake.previousDirection !== "up" && (e.code === "ArrowDown" || e.code === "KeyS")) snake.direction = "down";
-//     else if (snake.previousDirection !== "right" && (e.code === "ArrowLeft" || e.code === "KeyA")) snake.direction = "left";
-//     else if (snake.previousDirection !== "left" && (e.code === "ArrowRight" || e.code === "KeyD")) snake.direction = "right";
-// }
-// document.body.addEventListener("keydown", controls);
 
 function controller(e):void {
     if (
@@ -279,6 +286,7 @@ document.body.addEventListener("keydown", controller);
 /*function win() {
     Game.hasWon = true;
 }*/
+
 function gameOver() {
     console.log("Game over");
     if (Game.tickerId) {
